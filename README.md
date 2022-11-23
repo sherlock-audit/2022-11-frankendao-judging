@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/91 
 
 ## Found by 
-hansfriese
+Trumpero, curiousapple, hansfriese
 
 ## Summary
 When a user delegates their voting power from staked tokens, the total community voting power should be updated. But the update logic is not correct, the the total community voting power could be wrong values.
@@ -72,7 +72,7 @@ Note for JTP: Please double check this one, as I'm 99% confident but would love 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/70 
 
 ## Found by 
-hansfriese
+Haruxe, 0x52, hansfriese
 
 ## Summary
 `Staking.unstake()` doesn't decrease the original voting power that was used in `Staking.stake()`.
@@ -128,7 +128,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/17
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/53 
 
 ## Found by 
-curiousapple, Trumpero, John, neumo, bin2chen, koxuan, WATCHPUG
+Trumpero, WATCHPUG, neumo, bin2chen, curiousapple, koxuan, John, hansfriese
 
 ## Summary
 
@@ -187,7 +187,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/13
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/30 
 
 ## Found by 
-0x52
+0x52, cccz
 
 ## Summary
 
@@ -322,7 +322,7 @@ I didn't need to add safeMint, as I made a change for another issue that removed
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/56 
 
 ## Found by 
-curiousapple
+curiousapple, hansfriese
 
 ## Summary
 [Medium-1] Hardcoded monsterMultiplier in case of ``stakedTimeBonus`` disregards the updates done to  ``monsterMultiplier`` through ``setMonsterMultiplier()``
@@ -396,7 +396,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/12
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/55 
 
 ## Found by 
-Tomo, Bnke0x0, saian, rvierdiiev, Nyx, WATCHPUG
+saian, rvierdiiev, WATCHPUG, Tomo, Bnke0x0, Nyx
 
 ## Summary
 
@@ -443,7 +443,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/10
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/54 
 
 ## Found by 
-hansfriese, cccz, rvierdiiev, 0x52, John, neumo, Trumpero, WATCHPUG
+Trumpero, rvierdiiev, 0x52, WATCHPUG, neumo, cccz, John, hansfriese
 
 ## Summary
 
@@ -518,7 +518,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/20
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/25 
 
 ## Found by 
-Trumpero, hansfriese, 0x52
+Trumpero, 0x52, hansfriese
 
 ## Summary
 
@@ -617,7 +617,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/21
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/23 
 
 ## Found by 
-0x52
+rvierdiiev, 0x52
 
 ## Summary
 
