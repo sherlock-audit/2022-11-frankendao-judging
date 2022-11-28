@@ -72,7 +72,7 @@ Note for JTP: Please double check this one, as I'm 99% confident but would love 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/70 
 
 ## Found by 
-Haruxe, 0x52, hansfriese
+0x52, Haruxe, hansfriese
 
 ## Summary
 `Staking.unstake()` doesn't decrease the original voting power that was used in `Staking.stake()`.
@@ -128,7 +128,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/17
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/53 
 
 ## Found by 
-Trumpero, WATCHPUG, neumo, bin2chen, curiousapple, koxuan, John, hansfriese
+Trumpero, koxuan, hansfriese, neumo, John, WATCHPUG, bin2chen, curiousapple
 
 ## Summary
 
@@ -187,7 +187,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/13
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/30 
 
 ## Found by 
-0x52, cccz
+cccz, 0x52
 
 ## Summary
 
@@ -396,7 +396,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/12
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/55 
 
 ## Found by 
-saian, rvierdiiev, WATCHPUG, Tomo, Bnke0x0, Nyx
+saian, Nyx, Bnke0x0, Tomo, WATCHPUG, rvierdiiev
 
 ## Summary
 
@@ -443,7 +443,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/10
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/54 
 
 ## Found by 
-Trumpero, rvierdiiev, 0x52, WATCHPUG, neumo, cccz, John, hansfriese
+Trumpero, cccz, hansfriese, 0x52, John, WATCHPUG, neumo, rvierdiiev
 
 ## Summary
 
@@ -513,7 +513,218 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/20
 
 
 
-# Issue M-5: castVote can be called by anyone even those without votes 
+# Issue M-5: `getCommunityVotingPower` doesn't calculate voting Power correctly due to precision loss 
+
+Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/48 
+
+## Found by 
+ElKu
+
+## Summary
+
+In `Staking.sol`, the [getCommunityVotingPower](https://github.com/sherlock-audit/2022-11-frankendao/blob/main/src/Staking.sol#L520) function, doesn't calculate the votes correctly due to precision loss. 
+
+## Vulnerability Detail
+
+In [getCommunityVotingPower](https://github.com/sherlock-audit/2022-11-frankendao/blob/main/src/Staking.sol#L520) function, the `return` statement is where the mistake lies in:
+
+```solidity
+	return 
+        (votes * cpMultipliers.votes / PERCENT) + 
+        (proposalsCreated * cpMultipliers.proposalsCreated / PERCENT) + 
+        (proposalsPassed * cpMultipliers.proposalsPassed / PERCENT);
+```
+
+Here, after each multiplication by the `Multipliers`, we immediately divide it by `PERCENT`. Every time we do a division, there is a certain amount of precision loss. And when its done thrice, the loss just accumulates. So instead, the division by `PERCENT` should be done after all 3 terms are added together. 
+
+Note that this loss is not there, if the `Multipliers` are a multiple of `PERCENT`. But these values can be changed through governance later. So its better to be careful assuming that they may not always be a multiple of `PERCENT`.
+
+## Impact
+
+The community voting power of the user is calculated wrongly.
+
+## Code Snippet
+The `getCommunityVotingPower` function:
+
+```solidity
+    function getCommunityVotingPower(address _voter) public override view returns (uint) {
+      uint64 votes;
+      uint64 proposalsCreated;
+      uint64 proposalsPassed;
+      
+      // We allow this function to be called with the max uint value to get the total community voting power
+      if (_voter == address(type(uint160).max)) {
+        (votes, proposalsCreated, proposalsPassed) = governance.totalCommunityScoreData();
+      } else {
+        // This is only the case if they are delegated or unstaked, both of which should zero out the result
+        if (tokenVotingPower[_voter] == 0) return 0;
+
+        (votes, proposalsCreated, proposalsPassed) = governance.userCommunityScoreData(_voter);
+      }
+
+      CommunityPowerMultipliers memory cpMultipliers = communityPowerMultipliers;
+
+      return 
+        (votes * cpMultipliers.votes / PERCENT) + 
+        (proposalsCreated * cpMultipliers.proposalsCreated / PERCENT) + 
+        (proposalsPassed * cpMultipliers.proposalsPassed / PERCENT);
+    }
+```
+
+## Tool used
+
+VSCode, Manual Analysis
+
+## Recommendation
+
+Do the division once after all terms are added together:
+
+```solidity
+      return 
+        ( (votes * cpMultipliers.votes) + 
+        (proposalsCreated * cpMultipliers.proposalsCreated) + 
+        (proposalsPassed * cpMultipliers.proposalsPassed) ) / PERCENT;
+    }
+```
+
+## Discussion
+
+**zobront**
+
+This is a good suggestion but don't think it warrants a Medium. All these values are intended to be > 100. In the event that votes is lowered more, it will always be the case that proposalsCreated & proposalsPassed will be greater than 100, so combining them doesn't improve the accuracy.
+
+**El-Ku**
+
+Escalate for 5 USDC
+
+If the multipliers are not a multiple of 100, say for example 125, 150 and 175 or something like that, then the precision will be still lost. But as I myself mentioned in the report, if all the multipliers are a multiplier of 100, then these equations dont cause an issue.
+
+Otherwise we should do all the additions before doing the division. Even though the loss is still there it can be minimized by this step.
+
+I think it deserves a medium as this calculation controls many Governance functions.
+
+
+**sherlock-admin**
+
+ > Escalate for 5 USDC
+> 
+> If the multipliers are not a multiple of 100, say for example 125, 150 and 175 or something like that, then the precision will be still lost. But as I myself mentioned in the report, if all the multipliers are a multiplier of 100, then these equations dont cause an issue.
+> 
+> Otherwise we should do all the additions before doing the division. Even though the loss is still there it can be minimized by this step.
+> 
+> I think it deserves a medium as this calculation controls many Governance functions.
+> 
+
+You've created a valid escalation for 5 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+To change the amount you've staked on this escalation: Edit your comment **(do not create a new comment)**.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**zobront**
+
+I think this makes sense and I was wrong to dispute it. It's a change we would like to make and agree there's the potential for some values to calculated incorrectly.
+
+**Evert0x**
+
+Escalation accepted
+
+**sherlock-admin**
+
+> Escalation accepted
+
+This issue's escalations have been accepted!
+
+Contestants' payouts and scores will be updated according to the changes made on this issue.
+
+
+
+# Issue M-6: Staking#changeStakeTime and changeStakeAmount are problematic given current staking design 
+
+Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/31 
+
+## Found by 
+0x52
+
+## Summary
+
+Staking#changeStakeTime and changeStakeAmount allow the locking bonus to be modified. Any change to this value will cause voting imbalance in the system. If changes result in a higher total bonus then existing stakers will be given a permanent advantage over new stakers. If the bonus is increased then existing stakers will be at a disadvantage because they will be locked and unable to realize the new staking bonus.
+
+## Vulnerability Detail
+
+    function _stakeToken(uint _tokenId, uint _unlockTime) internal returns (uint) {
+      if (_unlockTime > 0) {
+        unlockTime[_tokenId] = _unlockTime;
+        uint fullStakedTimeBonus = ((_unlockTime - block.timestamp) * stakingSettings.maxStakeBonusAmount) / stakingSettings.maxStakeBonusTime;
+        stakedTimeBonus[_tokenId] = _tokenId < 10000 ? fullStakedTimeBonus : fullStakedTimeBonus / 2;
+      }
+
+When a token is staked their stakeTimeBonus is stored. This means that any changes to stakingSettings.maxStakeBonusAmount or stakingSettings.maxStakeBonusTime won't affect tokens that are already stored. Storing the value is essential to prevent changes to the values causing major damage to the voting, but it leads to other more subtle issue when it is changed that will put either existing or new stakers at a disadvantage. 
+
+Example:
+User A stake when maxStakeBonusAmount = 10 and stake long enough to get the entire bonus. Now maxStakeBonusAmount is changed to 20. User A is unable to unstake their token right away because it is locked. They are now at a disadvantage because other users can now stake and get a bonus of 20 while they are stuck with only a bonus of 10. Now maxStakeBonusAmount is changed to 5. User A now has an advantage because other users can now only stake for a bonus of 5. If User A never unstakes then they will forever have that advantage over new users.
+
+## Impact
+
+Voting power becomes skewed for users when Staking#changeStakeTime and changeStakeAmount are used
+
+## Code Snippet
+
+https://github.com/sherlock-audit/2022-11-frankendao/blob/main/src/Staking.sol#L389-L415
+
+## Tool used
+
+Manual Review
+
+## Recommendation
+
+I recommend implementing a poke function that can be called by any user on any user. This function should loop through all tokens (or the tokens specified) and recalculate their voting power based on current multipliers, allowing all users to be normalized to prevent any abuse.
+
+## Discussion
+
+**zobront**
+
+This is the intended behavior. Staking windows will be relatively short (~1 month) and bonuses will change only by governance vote. We accept that there may be short periods where a user is locked in a suboptimal spot, but they can unstake and restake when the period is over.
+
+**0x00052**
+
+Escalate for 1 USDC
+
+I think this should be considered valid. It won't just be for a small amount of time if the staking amount is lowered. In this case, all users who staked beforehand will have a permanent advantage over other users. Due to the permanent imbalance lowering it would cause in the voting power of users, I think that medium is appropriate.
+
+**sherlock-admin**
+
+ > Escalate for 1 USDC
+> 
+> I think this should be considered valid. It won't just be for a small amount of time if the staking amount is lowered. In this case, all users who staked beforehand will have a permanent advantage over other users. Due to the permanent imbalance lowering it would cause in the voting power of users, I think that medium is appropriate.
+
+You've created a valid escalation for 1 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+To change the amount you've staked on this escalation: Edit your comment **(do not create a new comment)**.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**zobront**
+
+I can see the argument here. We don't want to change it and believe it's fine as is, but it may be a valid Medium.
+
+**Evert0x**
+
+Escalation accepted
+
+**sherlock-admin**
+
+> Escalation accepted
+
+This issue's escalations have been accepted!
+
+Contestants' payouts and scores will be updated according to the changes made on this issue.
+
+
+
+# Issue M-7: castVote can be called by anyone even those without votes 
 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/25 
 
@@ -612,12 +823,126 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/21
 
 
 
-# Issue M-6: Delegate can keep can keep delegatee trapped indefinitely 
+# Issue M-8: Adversary can abuse delegating to lower quorum 
+
+Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/24 
+
+## Found by 
+0x52
+
+## Summary
+
+When a user delegates to another user they surrender their community voting power. The quorum threshold for a vote is determined when it is created. Users can artificially lower quorum by delegating to other users then creating a proposal. After it's created they can self delegate and regain all their community voting power to reach quorum easier. 
+
+## Vulnerability Detail
+
+    // If a user is delegating back to themselves, they regain their community voting power, so adjust totals up
+    if (_delegator == _delegatee) {
+      _updateTotalCommunityVotingPower(_delegator, true);
+
+    // If a user delegates away their votes, they forfeit their community voting power, so adjust totals down
+    } else if (currentDelegate == _delegator) {
+      _updateTotalCommunityVotingPower(_delegator, false);
+    }
+
+When a user delegates to user other than themselves, they forfeit their community votes and lowers the total number of votes. When they self delegate again they will recover all their community voting power.
+
+        newProposal.id = newProposalId.toUint96();
+        newProposal.proposer = msg.sender;
+        newProposal.targets = _targets;
+        newProposal.values = _values;
+        newProposal.signatures = _signatures;
+        newProposal.calldatas = _calldatas;
+
+        //@audit quorum votes locked at creation
+
+        newProposal.quorumVotes = quorumVotes().toUint24();
+        newProposal.startTime = (block.timestamp + votingDelay).toUint32();
+        newProposal.endTime = (block.timestamp + votingDelay + votingPeriod).toUint32();
+
+When a proposal is created the quorum is locked at the time at which it's created. Users can combine these two quirks to abuse the voting.
+
+Example:
+
+Assume there is 1000 total votes and quorum is 20%. Assume 5 users each have 35 votes, 10 base votes and 25 community votes. In this scenario quorum is 200 votes which they can't achieve. Each user delegates to other users, reducing each of their votes by 25 and reducing the total number of votes of 875. Now they can create a proposal and quorum will now be 175 votes (875*20%). They all self delegate and recover their community votes. Now they can reach quorum and pass their proposal.
+
+## Impact
+
+Users can collude to lower quorum and pass proposal easier
+
+## Code Snippet
+
+https://github.com/sherlock-audit/2022-11-frankendao/blob/main/src/Staking.sol#L286-L316
+
+## Tool used
+
+Manual Review
+
+## Recommendation
+
+One solution would be to add a vote cooldown to users after they delegate, long enough to make sure all active proposals have expired before they're able to vote. The other option would be to implement checkpoints.
+
+## Discussion
+
+**zobront**
+
+This is clever but the impact that a small number of users can have on quorum is relatively small, and we aren't concerned.
+
+**0x00052**
+
+Escalate for 1 USDC
+
+This is a valid issue. Even if they don't want to fix, it still has an impact on quorum which impacts proposals passing or failing. The impact is small at low quorum thresholds but at higher quorum thresholds the impact is larger.
+
+As an example if the quorum threshold is 10% then using this technique to drop overall votes by 100 would lower quorum by 10 votes but if the threshold is 50% then it would lower quorum by 50 votes.
+
+This decrease in quorum could allow borderline proposals to pass that normally couldn't meet quorum. Since the impact depends on the current quorum threshold (which is adjustable), medium seems appropriate to me. 
+
+**sherlock-admin**
+
+ > Escalate for 1 USDC
+> 
+> This is a valid issue. Even if they don't want to fix, it still has an impact on quorum which impacts proposals passing or failing. The impact is small at low quorum thresholds but at higher quorum thresholds the impact is larger.
+> 
+> As an example if the quorum threshold is 10% then using this technique to drop overall votes by 100 would lower quorum by 10 votes but if the threshold is 50% then it would lower quorum by 50 votes.
+> 
+> This decrease in quorum could allow borderline proposals to pass that normally couldn't meet quorum. Since the impact depends on the current quorum threshold (which is adjustable), medium seems appropriate to me. 
+
+You've created a valid escalation for 1 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+To change the amount you've staked on this escalation: Edit your comment **(do not create a new comment)**.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**zobront**
+
+I start by that this wouldn't have any substantial impact. First off, if a user delegates, they won't have any votes and therefore won't meet the threshold to create a proposal. So it would need to be a coordinated effort. And in the event that this happened, the impact would be relatively small. Seems unlikely and not impactful enough that a Medium feels like a stretch.
+
+**Evert0x**
+
+Escalation accepted. Assigning medium severity as the impact is not that significant + it requires a lot of effort to execute. 
+
+The quorum can be manipulated which can lead to unexpected behavior as illustrated. 
+
+**sherlock-admin**
+
+> Escalation accepted. Assigning medium severity as the impact is not that significant + it requires a lot of effort to execute. 
+> 
+> The quorum can be manipulated which can lead to unexpected behavior as illustrated. 
+
+This issue's escalations have been accepted!
+
+Contestants' payouts and scores will be updated according to the changes made on this issue.
+
+
+
+# Issue M-9: Delegate can keep can keep delegatee trapped indefinitely 
 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/23 
 
 ## Found by 
-rvierdiiev, 0x52
+curiousapple, 0x52, rvierdiiev
 
 ## Summary
 
@@ -665,9 +990,15 @@ I still think it's valid as a Medium, as this is obviously a situation we'd like
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/18
 
+This fix addresses the risk laid out in the issue, that a delegate may repeatedly propose to keep votes locked.
+
+We chose to not address the similar risk with voting because admins need to explicitly verify proposals before they can be voted on, so in the event this happens, admins would just hold off on verifying to give them a chance to undelegate. 
+
+We decided to go this direction because the cooldown period would add extra complexity and slightly increase gas fees on txs that we plan to refund a lot of.
 
 
-# Issue M-7: Veto function should decrease proposalsPassed (and possibly proposalsCreated) 
+
+# Issue M-10: Veto function should decrease proposalsPassed (and possibly proposalsCreated) 
 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/9 
 
