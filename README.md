@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/91 
 
 ## Found by 
-Trumpero, curiousapple, hansfriese
+curiousapple, hansfriese, Trumpero
 
 ## Summary
 When a user delegates their voting power from staked tokens, the total community voting power should be updated. But the update logic is not correct, the the total community voting power could be wrong values.
@@ -65,6 +65,10 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/15
 
 Note for JTP: Please double check this one, as I'm 99% confident but would love a second set of eyes on it.
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue H-2: `Staking.unstake()` doesn't decrease the original voting power that was used in `Staking.stake()`. 
@@ -72,7 +76,7 @@ Note for JTP: Please double check this one, as I'm 99% confident but would love 
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/70 
 
 ## Found by 
-0x52, Haruxe, hansfriese
+hansfriese, 0x52, Haruxe
 
 ## Summary
 `Staking.unstake()` doesn't decrease the original voting power that was used in `Staking.stake()`.
@@ -121,6 +125,10 @@ I think we should add a mapping like `tokenVotingPower` to save an original toke
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/17
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue H-3: Unbounded `_unlockTime` allows the attacker to get a huge `stakedTimeBonus` and dominate the voting 
@@ -128,7 +136,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/17
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/53 
 
 ## Found by 
-Trumpero, koxuan, hansfriese, neumo, John, WATCHPUG, bin2chen, curiousapple
+WATCHPUG, koxuan, neumo, hansfriese, curiousapple, bin2chen, Trumpero, John
 
 ## Summary
 
@@ -179,6 +187,10 @@ Change to:
 **zobront**
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/13
+
+**jack-the-pug**
+
+Fix confirmed
 
 
 
@@ -237,6 +249,10 @@ Remove the ability for users to unstake for other users
 **zobront**
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/14
+
+**jack-the-pug**
+
+Fix confirmed
 
 
 
@@ -315,6 +331,10 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/14
 
 I didn't need to add safeMint, as I made a change for another issue that removed the ability to non holder to unstake, which means they have the ability to hold NFTs.
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue M-2: [Medium-1] Hardcoded `monsterMultiplier` in case of `stakedTimeBonus` disregards the updates done to  `monsterMultiplier` through `setMonsterMultiplier()` 
@@ -389,6 +409,10 @@ Consider replacing the hardcoded value with monsterMultiplier
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/12
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue M-3: Using `ERC721.transferFrom()` instead of `safeTransferFrom()` may cause the user's NFT to be frozen in a contract that does not support ERC721 
@@ -396,7 +420,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/12
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/55 
 
 ## Found by 
-saian, Nyx, Bnke0x0, Tomo, WATCHPUG, rvierdiiev
+WATCHPUG, Nyx, saian, rvierdiiev, Bnke0x0, Tomo
 
 ## Summary
 
@@ -436,6 +460,10 @@ Consider using `safeTransferFrom()` instead of `transferFrom()`.
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/10
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue M-4: `queue()` should increase `proposalsPassed` instead of `proposalsCreated` 
@@ -443,7 +471,7 @@ Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/10
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/54 
 
 ## Found by 
-Trumpero, cccz, hansfriese, 0x52, John, WATCHPUG, neumo, rvierdiiev
+WATCHPUG, neumo, hansfriese, rvierdiiev, 0x52, cccz, Trumpero, John
 
 ## Summary
 
@@ -510,6 +538,10 @@ Change to:
 **ZakkMan**
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/20
+
+**jack-the-pug**
+
+Fix confirmed
 
 
 
@@ -638,6 +670,14 @@ This issue's escalations have been accepted!
 
 Contestants' payouts and scores will be updated according to the changes made on this issue.
 
+**zobront**
+
+Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/24
+
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue M-6: Staking#changeStakeTime and changeStakeAmount are problematic given current staking design 
@@ -729,7 +769,7 @@ Contestants' payouts and scores will be updated according to the changes made on
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/25 
 
 ## Found by 
-Trumpero, 0x52, hansfriese
+hansfriese, 0x52, Trumpero
 
 ## Summary
 
@@ -820,6 +860,10 @@ This is great and will fix, but an adversary being able to burn a small pool put
 **ZakkMan**
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/21
+
+**jack-the-pug**
+
+Fix confirmed
 
 
 
@@ -942,7 +986,7 @@ Contestants' payouts and scores will be updated according to the changes made on
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/23 
 
 ## Found by 
-curiousapple, 0x52, rvierdiiev
+rvierdiiev, curiousapple, 0x52
 
 ## Summary
 
@@ -996,6 +1040,10 @@ We chose to not address the similar risk with voting because admins need to expl
 
 We decided to go this direction because the cooldown period would add extra complexity and slightly increase gas fees on txs that we plan to refund a lot of.
 
+**jack-the-pug**
+
+Fix confirmed
+
 
 
 # Issue M-10: Veto function should decrease proposalsPassed (and possibly proposalsCreated) 
@@ -1003,7 +1051,7 @@ We decided to go this direction because the cooldown period would add extra comp
 Source: https://github.com/sherlock-audit/2022-11-frankendao-judging/issues/9 
 
 ## Found by 
-Trumpero, neumo
+neumo, Trumpero
 
 ## Summary
 When a proposal that has passed is vetoed, the proposer still has the bonus of `proposalsCreated` and `proposalsPassed` related to the proposal. Both should be decremented because `veto` is intended to be used for malicious proposals.
@@ -1044,6 +1092,10 @@ if (state(_proposalId) == ProposalState.Queued){
 
 Fixed: https://github.com/Solidity-Guild/FrankenDAO/pull/22
 
+
+**jack-the-pug**
+
+Fix confirmed
 
 
 
